@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic Weather Dashboard</title>
+  <style>
+    /* ===== GOOGLE FONT ===== */
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+    /* ===== GLOBAL STYLES ===== */
+    * { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins', sans-serif; }
+    body {
+      background: linear-gradient(135deg,#1c1c2b,#2b2b3a);
+      color:#fff;
+      min-height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      padding:20px;
+    }
+
+    /* ===== CONTAINER ===== */
+    .weather-dashboard {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(15px);
+      border-radius:20px;
+      padding:40px;
+      max-width:500px;
+      width:100%;
+      box-shadow: 0 0 30px rgba(0,255,255,0.2);
+      text-align:center;
+    }
+
+    h1 {
+      margin-bottom:20px;
+      font-size:2rem;
+      color:#00ffff;
+      text-shadow:0 0 10px #00ffff;
+    }
+
+    input, button {
+      padding:12px 20px;
+      border:none;
+      border-radius:10px;
+      margin:10px 5px;
+      font-size:1rem;
+      outline:none;
+    }
+
+    input {
+      width:60%;
+      background: rgba(255,255,255,0.1);
+      color:#fff;
+      box-shadow:0 0 10px rgba(0,255,255,0.2);
+    }
+
+    input::placeholder { color:#ccc; }
+
+    button {
+      background: #00ffff;
+      color:#000;
+      cursor:pointer;
+      font-weight:600;
+      transition:0.3s;
+      box-shadow:0 0 20px #00ffff;
+    }
+
+    button:hover {
+      background: #00bfbf;
+      box-shadow:0 0 30px #00ffff;
+    }
+
+    .weather-result {
+      margin-top:30px;
+      text-align:center;
+      animation: fadeIn 1s ease forwards;
+    }
+
+    .weather-result h2 {
+      font-size:1.8rem;
+      margin-bottom:10px;
+      text-shadow:0 0 10px #00ffff;
+    }
+
+    .weather-result p {
+      font-size:1rem;
+      margin:5px 0;
+    }
+
+    .forecast {
+      display:flex;
+      justify-content:space-between;
+      margin-top:20px;
+      flex-wrap:wrap;
+    }
+
+    .forecast-card {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(10px);
+      border-radius:15px;
+      padding:10px;
+      width:30%;
+      margin:5px 0;
+      box-shadow:0 0 10px #00ffff;
+    }
+
+    .forecast-card h4 {
+      margin-bottom:5px;
+      color:#00ffff;
+      text-shadow:0 0 5px #00ffff;
+    }
+
+    @keyframes fadeIn {
+      0% {opacity:0; transform:translateY(20px);}
+      100% {opacity:1; transform:translateY(0);}
+    }
+
+    .location-btn {
+      background:#ff00ff;
+      color:#fff;
+      box-shadow:0 0 20px #ff00ff;
+    }
+
+    .location-btn:hover {
+      background:#cc00cc;
+      box-shadow:0 0 30px #ff00ff;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="weather-dashboard">
+    <h1>Weather Dashboard</h1>
+    <input type="text" id="cityInput" placeholder="Enter city name">
+    <button id="searchBtn">Search</button>
+    <button id="geoBtn" class="location-btn">📍 Use My Location</button>
+
+    <div class="weather-result" id="weatherResult" style="display:none;">
+      <h2 id="cityName"></h2>
+      <p id="temp"></p>
+      <p id="condition"></p>
+      <div class="forecast" id="forecast"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_KEY = '1d23e184f155beb88257a0cf50e49439'; // Free tier key
+
+    const searchBtn = document.getElementById('searchBtn');
+    const geoBtn = document.getElementById('geoBtn');
+    const cityInput = document.getElementById('cityInput');
+    const weatherResult = document.getElementById('weatherResult');
+    const cityNameEl = document.getElementById('cityName');
+    const tempEl = document.getElementById('temp');
+    const conditionEl = document.getElementById('condition');
+    const forecastEl = document.getElementById('forecast');
+
+    searchBtn.addEventListener('click', () => {
+      const city = cityInput.value;
+      if(city) getWeather(city);
+    });
+
+    geoBtn.addEventListener('click', () => {
+      if(navigator.geolocation){
+        navigator.geolocation.getCurrentPosition(pos => {
+          const { latitude, longitude } = pos.coords;
+          getWeatherByCoords(latitude, longitude);
+        });
+      } else alert('Geolocation not supported');
+    });
+
+    async function getWeather(city){
+      try{
+        const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${API_KEY}`);
+        const data = await res.json();
+        showWeather(data);
+        getForecast(city);
+      }catch(err){ alert('City not found') }
+    }
+
+    async function getWeatherByCoords(lat, lon){
+      try{
+        const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`);
+        const data = await res.json();
+        showWeather(data);
+        getForecastByCoords(lat, lon);
+      }catch(err){ alert('Location not found') }
+    }
+
+    function showWeather(data){
+      cityNameEl.textContent = `${data.name}, ${data.sys.country}`;
+      tempEl.textContent = `Temperature: ${data.main.temp}°C`;
+      conditionEl.textContent = `Condition: ${data.weather[0].main}`;
+      weatherResult.style.display = 'block';
+    }
+
+    async function getForecast(city){
+      try{
+        const res = await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&cnt=5&appid=${API_KEY}`);
+        const data = await res.json();
+        showForecast(data.list);
+      }catch(err){ console.log(err) }
+    }
+
+    async function getForecastByCoords(lat, lon){
+      try{
+        const res = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&cnt=5&appid=${API_KEY}`);
+        const data = await res.json();
+        showForecast(data.list);
+      }catch(err){ console.log(err) }
+    }
+
+    function showForecast(list){
+      forecastEl.innerHTML = '';
+      list.forEach(item=>{
+        const card = document.createElement('div');
+        card.className='forecast-card';
+        const date = new Date(item.dt * 1000);
+        card.innerHTML = `
+          <h4>${date.getDate()}/${date.getMonth()+1}</h4>
+          <p>${item.main.temp}°C</p>
+          <p>${item.weather[0].main}</p>
+        `;
+        forecastEl.appendChild(card);
+      });
+    }
+  </script>
+</body>
+</html>
